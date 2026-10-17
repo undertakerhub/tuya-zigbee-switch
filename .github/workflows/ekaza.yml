@@ -1,0 +1,49 @@
+name: Build EKAZA TS0003
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y make python3 yq unzip wget
+
+    - name: Install Telink toolchain and venv
+      run: make telink/tools/all setup_venv
+
+    - name: Build SWITCH_EKAZA_MERCURIO_TS0003
+      run: |
+        source .venv/bin/activate
+        BOARD=SWITCH_EKAZA_MERCURIO_TS0003 DEVICE_TYPE=router make board/build
+        ls -l bin/router/SWITCH_EKAZA_MERCURIO_TS0003/
+
+    - name: Update Z2M converters
+      run: |
+        source .venv/bin/activate
+        make tools/update_converters
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ekaza-ts0003
+        path: |
+          bin/router/SWITCH_EKAZA_MERCURIO_TS0003/
+          zigbee2mqtt/
+
+    - name: Commit firmware
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add bin/router/SWITCH_EKAZA_MERCURIO_TS0003 zigbee2mqtt
+        git diff --cached --quiet || git commit -m "Build SWITCH_EKAZA_MERCURIO_TS0003"
+        git push
