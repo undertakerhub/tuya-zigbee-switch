@@ -2,8 +2,6 @@ name: Build EKAZA TS0003
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ekaza-build]
 
 permissions:
   contents: write
